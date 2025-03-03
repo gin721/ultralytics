@@ -10,6 +10,13 @@ from pathlib import Path
 import torch
 
 from ultralytics.nn.modules import (
+    SimFusion_4in,
+    SimFusion_3in,
+    IFM,
+    InjectionMultiSum_Auto_pool,
+    PyramidPoolAgg,
+    AdvPoolFusion,
+    TopBasicLayer,
     AIFI,
     C1,
     C2,
@@ -1073,6 +1080,30 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]
+        #gold yolo addition
+        elif m is SimFusion_4in:
+            c2 = sum(ch[x] for x in f)
+        elif m is SimFusion_3in:
+            c2 = args[0]
+            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+            args = [[ch[f_] for f_ in f], c2]
+        elif m is IFM:
+            c1 = ch[f]
+            c2 = sum(args[0])
+            args = [c1, *args]
+        elif m is InjectionMultiSum_Auto_pool:
+            c1 = ch[f[0]]
+            c2 = args[0]
+            args = [c1, *args]
+        elif m is PyramidPoolAgg:
+            c2 = args[0]
+            args = [sum([ch[f_] for f_ in f]), *args]
+        elif m is AdvPoolFusion:
+            c2 = sum(ch[x] for x in f)
+        elif m is TopBasicLayer:
+            c2 = sum(args[1])
+        #gold yolo addition end
         else:
             c2 = ch[f]
 
